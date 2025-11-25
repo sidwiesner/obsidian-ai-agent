@@ -224,18 +224,30 @@ export class ClaudeTerminalView extends ItemView {
 		}
 	}
 
+	private insertCurrentFilePath(): void {
+		if (!this.terminalManager) return;
+
+		const activeFile = this.app.workspace.getActiveFile();
+		if (activeFile) {
+			this.terminalManager.write(activeFile.path);
+			// Return focus to terminal
+			this.terminal?.focus();
+		}
+	}
+
 	// ==================== Footer ====================
 
 	private createFooter(): void {
 		this.footerEl = this.contentEl.createEl('div', { cls: 'claude-footer' });
 
-		// Current file chip (left side)
+		// Current file chip (left side) - click to insert file path
 		this.fileChipEl = this.footerEl.createEl('div', { cls: 'claude-file-chip' });
 		const fileIcon = this.fileChipEl.createEl('span', { cls: 'claude-file-icon' });
 		setIcon(fileIcon, 'file-text');
 		this.fileChipEl.createEl('span', { cls: 'claude-file-name' });
 		this.updateFileChip();
 		this.fileChipEl.addEventListener('click', () => this.insertCurrentFilePath());
+		this.fileChipEl.setAttribute('aria-label', 'Click to insert file path');
 
 		// Register for active file changes
 		this.registerEvent(
@@ -255,17 +267,6 @@ export class ClaudeTerminalView extends ItemView {
 		const nameEl = this.fileChipEl.querySelector('.claude-file-name');
 		if (nameEl) {
 			nameEl.textContent = activeFile ? activeFile.basename : 'No file';
-		}
-	}
-
-	private insertCurrentFilePath(): void {
-		if (!this.terminal || !this.terminalManager) return;
-
-		const activeFile = this.app.workspace.getActiveFile();
-		if (activeFile) {
-			const vaultPath = (this.app.vault.adapter as any).basePath;
-			const fullPath = `${vaultPath}/${activeFile.path}`;
-			this.terminalManager.write(fullPath);
 		}
 	}
 
