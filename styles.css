@@ -28,41 +28,8 @@
 	border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.claude-session-dropdown {
+.claude-header-spacer {
 	flex: 1;
-}
-
-.claude-dropdown-btn {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 8px;
-	background: transparent;
-	border: none;
-	border-radius: var(--radius-s);
-	color: var(--text-muted);
-	font-size: var(--font-small);
-	cursor: pointer;
-	transition: all 0.15s ease;
-}
-
-.claude-dropdown-btn:hover {
-	background: var(--background-modifier-hover);
-	color: var(--text-normal);
-}
-
-.claude-dropdown-text {
-	font-weight: 500;
-}
-
-.claude-dropdown-chevron {
-	display: flex;
-	align-items: center;
-}
-
-.claude-dropdown-chevron svg {
-	width: 12px;
-	height: 12px;
 }
 
 .claude-new-btn {

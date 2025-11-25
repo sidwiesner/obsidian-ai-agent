@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, setIcon, Menu } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
@@ -24,7 +24,6 @@ export class ClaudeTerminalView extends ItemView {
 	private terminalContainerEl: HTMLElement;
 	private emptyStateEl: HTMLElement;
 	private footerEl: HTMLElement;
-	private sessionDropdown: HTMLElement;
 	private timerEl: HTMLElement;
 	private fileChipEl: HTMLElement;
 	private askBeforeEditsToggle: HTMLElement;
@@ -91,45 +90,14 @@ export class ClaudeTerminalView extends ItemView {
 	private createHeader(): void {
 		this.headerEl = this.contentEl.createEl('div', { cls: 'claude-header' });
 
-		// Past Conversations dropdown
-		this.sessionDropdown = this.headerEl.createEl('div', { cls: 'claude-session-dropdown' });
-		const dropdownBtn = this.sessionDropdown.createEl('button', { cls: 'claude-dropdown-btn' });
-		dropdownBtn.createEl('span', { text: 'Past Conversations', cls: 'claude-dropdown-text' });
-		const chevron = dropdownBtn.createEl('span', { cls: 'claude-dropdown-chevron' });
-		setIcon(chevron, 'chevron-down');
-
-		dropdownBtn.addEventListener('click', (e) => this.showSessionMenu(e));
+		// Spacer to push new button to the right
+		this.headerEl.createEl('div', { cls: 'claude-header-spacer' });
 
 		// New conversation button
 		const newBtn = this.headerEl.createEl('button', { cls: 'claude-new-btn' });
 		setIcon(newBtn, 'plus');
 		newBtn.setAttribute('aria-label', 'New conversation');
 		newBtn.addEventListener('click', () => this.startNewSession());
-	}
-
-	private showSessionMenu(e: MouseEvent): void {
-		const menu = new Menu();
-		const sessions = this.sessionManager.listSessions();
-
-		if (sessions.length === 0) {
-			menu.addItem((item) => {
-				item.setTitle('No past conversations');
-				item.setDisabled(true);
-			});
-		} else {
-			sessions.slice(0, 20).forEach((session) => {
-				menu.addItem((item) => {
-					const date = new Date(session.timestamp);
-					const preview = session.preview.length > 40
-						? session.preview.substring(0, 40) + '...'
-						: session.preview;
-					item.setTitle(`${preview}`);
-					item.onClick(() => this.resumeSession(session.id));
-				});
-			});
-		}
-
-		menu.showAtMouseEvent(e);
 	}
 
 	// ==================== Terminal Area ====================
@@ -363,73 +331,6 @@ export class ClaudeTerminalView extends ItemView {
 		}
 
 		// Start timer
-		this.startTimer();
-		this.isSessionActive = true;
-
-		// Focus terminal
-		this.terminal?.focus();
-
-		// Initial resize
-		setTimeout(() => {
-			this.fitTerminal();
-			if (this.terminal && this.terminalManager) {
-				this.terminalManager.resize(this.terminal.cols, this.terminal.rows);
-			}
-		}, 100);
-	}
-
-	private async resumeSession(sessionId: string): Promise<void> {
-		// Hide empty state, show terminal
-		this.emptyStateEl.addClass('hidden');
-		this.terminalContainerEl.removeClass('hidden');
-
-		// Initialize terminal if needed
-		if (!this.terminal) {
-			this.initializeTerminal();
-		} else {
-			this.terminal.clear();
-		}
-
-		// Get vault path
-		const vaultPath = (this.app.vault.adapter as any).basePath;
-
-		// Detect Claude CLI path
-		const commands = CommandDetector.detectCommands(
-			this.settings?.nodeLocation,
-			this.settings?.claudeLocation
-		);
-
-		// Build Claude args with resume
-		const claudeArgs: string[] = ['--verbose', '--resume', sessionId];
-		if (!this.settings.askBeforeEdits) {
-			claudeArgs.push('--dangerously-skip-permissions');
-		}
-
-		// Create terminal manager
-		this.terminalManager = new TerminalManager(this.pluginPath, {
-			cwd: vaultPath,
-			pythonPath: this.settings.pythonPath,
-			onData: (data) => {
-				if (this.terminal) {
-					this.terminal.write(data);
-				}
-			},
-			onExit: (code) => {
-				if (this.terminal) {
-					this.terminal.writeln(`\r\n[Process exited with code ${code}]`);
-				}
-				this.stopTimer();
-			}
-		});
-
-		// Spawn Claude CLI directly (it has its own shebang)
-		if (commands.isWSL) {
-			this.terminalManager.spawn('wsl', [...(commands.wslPrefix || []), '--', commands.claude, ...claudeArgs]);
-		} else {
-			this.terminalManager.spawn(commands.claude, claudeArgs);
-		}
-
-		this.currentSessionId = sessionId;
 		this.startTimer();
 		this.isSessionActive = true;
 
