@@ -127,9 +127,17 @@
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	background: #1e1e1e;
 	padding: 8px;
 	min-height: 0;
+}
+
+/* Theme-aware terminal background */
+.theme-dark .claude-terminal-wrapper {
+	background: #1e1e1e;
+}
+
+.theme-light .claude-terminal-wrapper {
+	background: #ffffff;
 }
 
 .claude-terminal-wrapper.hidden {
@@ -152,7 +160,6 @@
 }
 
 .claude-terminal-wrapper .xterm-viewport {
-	background-color: #1e1e1e;
 	overflow-y: scroll;
 	cursor: default;
 	position: absolute;
@@ -160,6 +167,14 @@
 	left: 0;
 	top: 0;
 	bottom: 0;
+}
+
+.theme-dark .claude-terminal-wrapper .xterm-viewport {
+	background-color: #1e1e1e;
+}
+
+.theme-light .claude-terminal-wrapper .xterm-viewport {
+	background-color: #ffffff;
 }
 
 .claude-terminal-wrapper .xterm-screen {
@@ -261,13 +276,22 @@
 	background: transparent;
 }
 
-.claude-terminal-wrapper ::-webkit-scrollbar-thumb {
+.theme-dark .claude-terminal-wrapper ::-webkit-scrollbar-thumb {
 	background: rgba(255, 255, 255, 0.2);
 	border-radius: 4px;
 }
 
-.claude-terminal-wrapper ::-webkit-scrollbar-thumb:hover {
+.theme-dark .claude-terminal-wrapper ::-webkit-scrollbar-thumb:hover {
 	background: rgba(255, 255, 255, 0.3);
+}
+
+.theme-light .claude-terminal-wrapper ::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 4px;
+}
+
+.theme-light .claude-terminal-wrapper ::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.3);
 }
 
 /* ==================== Session Menu Styling ==================== */

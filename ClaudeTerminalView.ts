@@ -30,6 +30,7 @@ export class ClaudeTerminalView extends ItemView {
 	private isSessionActive: boolean = false;
 	private currentSessionId: string | null = null;
 	private resizeObserver: ResizeObserver | null = null;
+	private themeObserver: MutationObserver | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -63,11 +64,25 @@ export class ClaudeTerminalView extends ItemView {
 		this.createTerminalArea();
 		this.createFooter();
 
+		// Watch for theme changes
+		this.themeObserver = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				if (mutation.attributeName === 'class' && this.terminal) {
+					this.terminal.options.theme = this.getTerminalTheme();
+				}
+			}
+		});
+		this.themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
 		// Load sessions
 		await this.sessionManager.load();
 	}
 
 	async onClose(): Promise<void> {
+		if (this.themeObserver) {
+			this.themeObserver.disconnect();
+			this.themeObserver = null;
+		}
 		if (this.resizeObserver) {
 			this.resizeObserver.disconnect();
 			this.resizeObserver = null;
@@ -115,6 +130,28 @@ export class ClaudeTerminalView extends ItemView {
 		this.emptyStateEl.style.cursor = 'pointer';
 	}
 
+	private getTerminalTheme(): { background: string; foreground: string; cursor: string; cursorAccent: string; selectionBackground: string } {
+		const isDark = document.body.classList.contains('theme-dark');
+
+		if (isDark) {
+			return {
+				background: '#1e1e1e',
+				foreground: '#d4d4d4',
+				cursor: '#d4d4d4',
+				cursorAccent: '#1e1e1e',
+				selectionBackground: '#264f78',
+			};
+		} else {
+			return {
+				background: '#ffffff',
+				foreground: '#383a42',
+				cursor: '#383a42',
+				cursorAccent: '#ffffff',
+				selectionBackground: '#add6ff',
+			};
+		}
+	}
+
 	private initializeTerminal(): void {
 		if (this.terminal) {
 			this.terminal.dispose();
@@ -124,13 +161,7 @@ export class ClaudeTerminalView extends ItemView {
 			cursorBlink: true,
 			fontSize: this.settings.terminalFontSize || 13,
 			fontFamily: this.settings.terminalFontFamily || 'Menlo, Monaco, "Courier New", monospace',
-			theme: {
-				background: '#1e1e1e',
-				foreground: '#d4d4d4',
-				cursor: '#d4d4d4',
-				cursorAccent: '#1e1e1e',
-				selectionBackground: '#264f78',
-			},
+			theme: this.getTerminalTheme(),
 			allowProposedApi: true,
 		});
 
