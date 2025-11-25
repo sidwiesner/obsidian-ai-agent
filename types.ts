@@ -4,7 +4,6 @@ export interface AIChatSettings {
 	pythonPath?: string;
 	terminalFontSize?: number;
 	terminalFontFamily?: string;
-	askBeforeEdits?: boolean;
 	debugContext?: boolean;
 }
 
@@ -14,6 +13,5 @@ export const DEFAULT_SETTINGS: AIChatSettings = {
 	pythonPath: 'python3',
 	terminalFontSize: 13,
 	terminalFontFamily: 'Menlo, Monaco, "Courier New", monospace',
-	askBeforeEdits: true,
 	debugContext: false
 }

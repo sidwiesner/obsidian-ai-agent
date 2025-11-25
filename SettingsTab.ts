@@ -78,19 +78,6 @@ export class AIChatSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		// === Behavior ===
-		containerEl.createEl('h3', { text: 'Behavior' });
-
-		new Setting(containerEl)
-			.setName('Ask before edits')
-			.setDesc('When enabled, Claude will ask for confirmation before making file changes. Disable to allow automatic edits (uses --dangerously-skip-permissions).')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.askBeforeEdits !== false)
-				.onChange(async (value) => {
-					this.plugin.settings.askBeforeEdits = value;
-					await this.plugin.saveSettings();
-				}));
-
 		// === Debug ===
 		containerEl.createEl('h3', { text: 'Debug' });
 

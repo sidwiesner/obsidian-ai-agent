@@ -284,9 +284,6 @@ export class ClaudeTerminalView extends ItemView {
 
 		// Build Claude args
 		const claudeArgs: string[] = ['--verbose'];
-		if (!this.settings.askBeforeEdits) {
-			claudeArgs.push('--dangerously-skip-permissions');
-		}
 
 		// Create terminal manager
 		this.terminalManager = new TerminalManager(this.pluginPath, {
