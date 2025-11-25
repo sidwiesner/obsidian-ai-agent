@@ -195,24 +195,17 @@
 /* ==================== Footer ==================== */
 .claude-footer {
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
+	align-items: center;
+	padding: 6px 12px;
+	gap: 12px;
 	background: var(--background-secondary);
 	border-top: 1px solid var(--background-modifier-border);
 }
 
 .claude-focus-hint {
-	padding: 4px 12px;
 	font-size: var(--font-smaller);
 	color: var(--text-faint);
-	text-align: center;
-	border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.claude-status-bar {
-	display: flex;
-	align-items: center;
-	padding: 6px 12px;
-	gap: 12px;
 }
 
 /* File chip */
@@ -258,25 +251,6 @@
 	flex: 1;
 }
 
-/* Timer */
-.claude-timer {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	font-size: var(--font-smaller);
-	color: var(--text-muted);
-	font-family: var(--font-monospace);
-}
-
-.claude-timer-icon {
-	display: flex;
-	align-items: center;
-}
-
-.claude-timer-icon svg {
-	width: 12px;
-	height: 12px;
-}
 
 /* ==================== Scrollbar Styles ==================== */
 .claude-terminal-wrapper ::-webkit-scrollbar {
@@ -303,17 +277,20 @@
 
 /* ==================== Responsive ==================== */
 @media (max-width: 300px) {
-	.claude-status-bar {
+	.claude-footer {
 		flex-wrap: wrap;
 		gap: 8px;
 	}
 
-	.claude-toggle-text,
 	.claude-file-name {
 		display: none;
 	}
 
 	.claude-file-chip {
 		padding: 4px 6px;
+	}
+
+	.claude-focus-hint {
+		display: none;
 	}
 }

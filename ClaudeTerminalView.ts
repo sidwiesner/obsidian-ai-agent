@@ -24,13 +24,10 @@ export class ClaudeTerminalView extends ItemView {
 	private terminalContainerEl: HTMLElement;
 	private emptyStateEl: HTMLElement;
 	private footerEl: HTMLElement;
-	private timerEl: HTMLElement;
 	private fileChipEl: HTMLElement;
 
 	// State
 	private isSessionActive: boolean = false;
-	private sessionStartTime: number = 0;
-	private timerInterval: number | null = null;
 	private currentSessionId: string | null = null;
 	private resizeObserver: ResizeObserver | null = null;
 
@@ -71,7 +68,6 @@ export class ClaudeTerminalView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
-		this.stopTimer();
 		if (this.resizeObserver) {
 			this.resizeObserver.disconnect();
 			this.resizeObserver = null;
@@ -87,16 +83,8 @@ export class ClaudeTerminalView extends ItemView {
 	// ==================== Header ====================
 
 	private createHeader(): void {
-		this.headerEl = this.contentEl.createEl('div', { cls: 'claude-header' });
-
-		// Spacer to push new button to the right
-		this.headerEl.createEl('div', { cls: 'claude-header-spacer' });
-
-		// New conversation button
-		const newBtn = this.headerEl.createEl('button', { cls: 'claude-new-btn' });
-		setIcon(newBtn, 'plus');
-		newBtn.setAttribute('aria-label', 'New conversation');
-		newBtn.addEventListener('click', () => this.startNewSession());
+		// Header is now empty but kept for potential future use
+		this.headerEl = this.contentEl.createEl('div', { cls: 'claude-header hidden' });
 	}
 
 	// ==================== Terminal Area ====================
@@ -210,18 +198,11 @@ export class ClaudeTerminalView extends ItemView {
 	private createFooter(): void {
 		this.footerEl = this.contentEl.createEl('div', { cls: 'claude-footer' });
 
-		// Focus hint
-		const hintEl = this.footerEl.createEl('div', { cls: 'claude-focus-hint' });
-		hintEl.textContent = '⌘ Esc to focus or unfocus Claude';
-
-		// Status bar
-		const statusBar = this.footerEl.createEl('div', { cls: 'claude-status-bar' });
-
-		// Current file chip
-		this.fileChipEl = statusBar.createEl('div', { cls: 'claude-file-chip' });
+		// Current file chip (left side)
+		this.fileChipEl = this.footerEl.createEl('div', { cls: 'claude-file-chip' });
 		const fileIcon = this.fileChipEl.createEl('span', { cls: 'claude-file-icon' });
 		setIcon(fileIcon, 'file-text');
-		const fileName = this.fileChipEl.createEl('span', { cls: 'claude-file-name' });
+		this.fileChipEl.createEl('span', { cls: 'claude-file-name' });
 		this.updateFileChip();
 		this.fileChipEl.addEventListener('click', () => this.insertCurrentFilePath());
 
@@ -231,13 +212,11 @@ export class ClaudeTerminalView extends ItemView {
 		);
 
 		// Spacer
-		statusBar.createEl('div', { cls: 'claude-spacer' });
+		this.footerEl.createEl('div', { cls: 'claude-spacer' });
 
-		// Timer
-		this.timerEl = statusBar.createEl('div', { cls: 'claude-timer' });
-		const timerIcon = this.timerEl.createEl('span', { cls: 'claude-timer-icon' });
-		setIcon(timerIcon, 'clock');
-		this.timerEl.createEl('span', { text: '0:00', cls: 'claude-timer-text' });
+		// Focus hint (right side)
+		const hintEl = this.footerEl.createEl('div', { cls: 'claude-focus-hint' });
+		hintEl.textContent = '⌘ Esc to focus or unfocus Claude';
 	}
 
 	private updateFileChip(): void {
@@ -300,7 +279,6 @@ export class ClaudeTerminalView extends ItemView {
 				if (this.terminal) {
 					this.terminal.writeln(`\r\n[Process exited with code ${code}]`);
 				}
-				this.stopTimer();
 			}
 		});
 
@@ -311,8 +289,6 @@ export class ClaudeTerminalView extends ItemView {
 			this.terminalManager.spawn(commands.claude, claudeArgs);
 		}
 
-		// Start timer
-		this.startTimer();
 		this.isSessionActive = true;
 
 		// Focus terminal
@@ -335,33 +311,6 @@ export class ClaudeTerminalView extends ItemView {
 			this.currentSessionId = sessionMatch[1];
 			// Save session
 			this.sessionManager.saveSession(this.currentSessionId, 'New conversation');
-		}
-	}
-
-	// ==================== Timer ====================
-
-	private startTimer(): void {
-		this.sessionStartTime = Date.now();
-		this.updateTimerDisplay();
-		this.timerInterval = window.setInterval(() => {
-			this.updateTimerDisplay();
-		}, 1000);
-	}
-
-	private stopTimer(): void {
-		if (this.timerInterval) {
-			clearInterval(this.timerInterval);
-			this.timerInterval = null;
-		}
-	}
-
-	private updateTimerDisplay(): void {
-		const elapsed = Math.floor((Date.now() - this.sessionStartTime) / 1000);
-		const minutes = Math.floor(elapsed / 60);
-		const seconds = elapsed % 60;
-		const timerText = this.timerEl.querySelector('.claude-timer-text');
-		if (timerText) {
-			timerText.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 		}
 	}
 
