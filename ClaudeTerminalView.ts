@@ -26,7 +26,6 @@ export class ClaudeTerminalView extends ItemView {
 	private footerEl: HTMLElement;
 	private timerEl: HTMLElement;
 	private fileChipEl: HTMLElement;
-	private askBeforeEditsToggle: HTMLElement;
 
 	// State
 	private isSessionActive: boolean = false;
@@ -218,14 +217,6 @@ export class ClaudeTerminalView extends ItemView {
 		// Status bar
 		const statusBar = this.footerEl.createEl('div', { cls: 'claude-status-bar' });
 
-		// Ask before edits toggle
-		this.askBeforeEditsToggle = statusBar.createEl('div', { cls: 'claude-toggle' });
-		const toggleIcon = this.askBeforeEditsToggle.createEl('span', { cls: 'claude-toggle-icon' });
-		setIcon(toggleIcon, 'pencil');
-		this.askBeforeEditsToggle.createEl('span', { text: 'Ask before edits', cls: 'claude-toggle-text' });
-		this.askBeforeEditsToggle.classList.toggle('active', this.settings.askBeforeEdits !== false);
-		this.askBeforeEditsToggle.addEventListener('click', () => this.toggleAskBeforeEdits());
-
 		// Current file chip
 		this.fileChipEl = statusBar.createEl('div', { cls: 'claude-file-chip' });
 		const fileIcon = this.fileChipEl.createEl('span', { cls: 'claude-file-icon' });
@@ -255,13 +246,6 @@ export class ClaudeTerminalView extends ItemView {
 		if (nameEl) {
 			nameEl.textContent = activeFile ? activeFile.basename : 'No file';
 		}
-	}
-
-	private toggleAskBeforeEdits(): void {
-		const newValue = !this.askBeforeEditsToggle.classList.contains('active');
-		this.askBeforeEditsToggle.classList.toggle('active', newValue);
-		this.settings.askBeforeEdits = newValue;
-		// Note: Settings will be saved by the plugin
 	}
 
 	private insertCurrentFilePath(): void {

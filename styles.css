@@ -215,47 +215,6 @@
 	gap: 12px;
 }
 
-/* Toggle button */
-.claude-toggle {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	background: transparent;
-	border-radius: var(--radius-s);
-	color: var(--text-muted);
-	font-size: var(--font-smaller);
-	cursor: pointer;
-	transition: all 0.15s ease;
-	user-select: none;
-}
-
-.claude-toggle:hover {
-	background: var(--background-modifier-hover);
-}
-
-.claude-toggle.active {
-	color: var(--interactive-accent);
-}
-
-.claude-toggle.active .claude-toggle-icon svg {
-	color: var(--interactive-accent);
-}
-
-.claude-toggle-icon {
-	display: flex;
-	align-items: center;
-}
-
-.claude-toggle-icon svg {
-	width: 14px;
-	height: 14px;
-}
-
-.claude-toggle-text {
-	font-weight: 500;
-}
-
 /* File chip */
 .claude-file-chip {
 	display: flex;
