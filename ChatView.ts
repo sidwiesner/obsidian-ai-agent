@@ -5,6 +5,53 @@ import { CommandDetector } from './commandDetector';
 
 export const VIEW_TYPE_AI_CHAT = 'ai-chat-view';
 
+interface SlashCommand {
+	name: string;
+	description: string;
+}
+
+const BUILT_IN_SLASH_COMMANDS: SlashCommand[] = [
+	{ name: 'add-dir', description: 'Add additional working directories' },
+	{ name: 'agents', description: 'Manage custom AI subagents for specialized tasks' },
+	{ name: 'bashes', description: 'List and manage background tasks' },
+	{ name: 'bug', description: 'Report bugs to Anthropic' },
+	{ name: 'clear', description: 'Clear conversation history' },
+	{ name: 'compact', description: 'Compact conversation with optional focus instructions' },
+	{ name: 'config', description: 'Open the Settings interface' },
+	{ name: 'context', description: 'Visualize current context usage as a colored grid' },
+	{ name: 'cost', description: 'Show token usage statistics' },
+	{ name: 'doctor', description: 'Check the health of your Claude Code installation' },
+	{ name: 'exit', description: 'Exit the REPL' },
+	{ name: 'export', description: 'Export the current conversation to a file or clipboard' },
+	{ name: 'help', description: 'Get usage help' },
+	{ name: 'hooks', description: 'Manage hook configurations for tool events' },
+	{ name: 'ide', description: 'Manage IDE integrations and show status' },
+	{ name: 'init', description: 'Initialize project with CLAUDE.md guide' },
+	{ name: 'install-github-app', description: 'Set up Claude GitHub Actions for a repository' },
+	{ name: 'login', description: 'Switch Anthropic accounts' },
+	{ name: 'logout', description: 'Sign out from your Anthropic account' },
+	{ name: 'mcp', description: 'Manage MCP server connections and OAuth authentication' },
+	{ name: 'memory', description: 'Edit CLAUDE.md memory files' },
+	{ name: 'model', description: 'Select or change the AI model' },
+	{ name: 'output-style', description: 'Set the output style directly or from a selection menu' },
+	{ name: 'permissions', description: 'View or update permissions' },
+	{ name: 'plugin', description: 'Manage Claude Code plugins' },
+	{ name: 'pr-comments', description: 'View pull request comments' },
+	{ name: 'privacy-settings', description: 'View and update your privacy settings' },
+	{ name: 'release-notes', description: 'View release notes' },
+	{ name: 'resume', description: 'Resume a conversation' },
+	{ name: 'review', description: 'Request code review' },
+	{ name: 'rewind', description: 'Rewind the conversation and/or code' },
+	{ name: 'sandbox', description: 'Enable sandboxed bash tool with filesystem and network isolation' },
+	{ name: 'security-review', description: 'Complete a security review of pending changes' },
+	{ name: 'status', description: 'Open the Settings interface showing version and account info' },
+	{ name: 'statusline', description: "Set up Claude Code's status line UI" },
+	{ name: 'terminal-setup', description: 'Install Shift+Enter key binding for newlines' },
+	{ name: 'todos', description: 'List current todo items' },
+	{ name: 'usage', description: 'Show plan usage limits and rate limit status' },
+	{ name: 'vim', description: 'Enter vim mode for alternating insert and command modes' },
+];
+
 interface TextBlock {
 	type: "text";
 	text: string;
@@ -68,6 +115,12 @@ export class AIChatView extends ItemView {
 	isProcessing: boolean = false;
 	sendButton: HTMLButtonElement;
 	loadingIndicator: HTMLElement;
+
+	// Slash command autocomplete
+	suggestionsDropdown: HTMLElement | null = null;
+	filteredCommands: SlashCommand[] = [];
+	selectedSuggestionIndex: number = 0;
+	slashCommandStart: number = -1;
 
 	constructor(leaf: WorkspaceLeaf, settings: AIChatSettings) {
 		super(leaf);
@@ -179,6 +232,27 @@ export class AIChatView extends ItemView {
 
 		this.sendButton.addEventListener('click', () => this.handleButtonClick());
 		this.inputField.addEventListener('keydown', (e: KeyboardEvent) => {
+			// Handle suggestions navigation first
+			if (this.suggestionsDropdown && !this.suggestionsDropdown.hasClass('hidden')) {
+				if (e.key === 'ArrowDown') {
+					e.preventDefault();
+					this.navigateSuggestion(1);
+					return;
+				} else if (e.key === 'ArrowUp') {
+					e.preventDefault();
+					this.navigateSuggestion(-1);
+					return;
+				} else if (e.key === 'Enter' || e.key === 'Tab') {
+					e.preventDefault();
+					this.insertSelectedSuggestion();
+					return;
+				} else if (e.key === 'Escape') {
+					e.preventDefault();
+					this.hideSuggestions();
+					return;
+				}
+			}
+
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
 				this.handleButtonClick();
@@ -186,33 +260,185 @@ export class AIChatView extends ItemView {
 			// Shift+Enter allows normal newline behavior
 		});
 
-		// Auto-resize functionality
+		// Auto-resize functionality and slash command detection
 		this.inputField.addEventListener('input', () => {
 			this.autoResizeTextarea();
+			this.handleSlashCommandInput();
 		});
 
 		// Set initial height
 		this.autoResizeTextarea();
+
+		// Create suggestions dropdown (hidden by default)
+		this.createSuggestionsDropdown();
 	}
 
 	autoResizeTextarea() {
 		// Reset height to auto to get the natural height
 		this.inputField.style.height = 'auto';
-		
+
 		// Get the CSS min-height value (2.5rem)
 		const computedStyle = getComputedStyle(this.inputField);
 		const minHeight = parseFloat(computedStyle.minHeight);
-		
+
 		// Use the larger of scroll height or min-height
 		const newHeight = Math.max(this.inputField.scrollHeight, minHeight);
 		this.inputField.style.height = newHeight + 'px';
-		
+
 		// Ensure it doesn't exceed the CSS max-height (50vh)
 		const maxHeight = window.innerHeight * 0.5; // 50vh
 		if (newHeight > maxHeight) {
 			this.inputField.style.height = maxHeight + 'px';
 		}
 	}
+
+	// ========== Slash Command Autocomplete ==========
+
+	createSuggestionsDropdown() {
+		this.suggestionsDropdown = this.inputContainer.createEl('div', {
+			cls: 'ai-slash-suggestions hidden'
+		});
+	}
+
+	handleSlashCommandInput() {
+		const text = this.inputField.value;
+		const cursorPos = this.inputField.selectionStart;
+
+		// Find if we're in a slash command context
+		// Look backwards from cursor to find a '/' that starts a command
+		const textBeforeCursor = text.substring(0, cursorPos);
+
+		// Check if we're at the start of input or after whitespace/newline
+		const slashMatch = textBeforeCursor.match(/(?:^|[\s\n])(\/\w*)$/);
+
+		if (slashMatch) {
+			const query = slashMatch[1].substring(1); // Remove the leading '/'
+			this.slashCommandStart = cursorPos - slashMatch[1].length;
+			this.filterAndShowSuggestions(query);
+		} else {
+			this.hideSuggestions();
+		}
+	}
+
+	filterAndShowSuggestions(query: string) {
+		const lowerQuery = query.toLowerCase();
+		this.filteredCommands = BUILT_IN_SLASH_COMMANDS.filter(cmd =>
+			cmd.name.toLowerCase().startsWith(lowerQuery)
+		);
+
+		if (this.filteredCommands.length === 0) {
+			this.hideSuggestions();
+			return;
+		}
+
+		this.selectedSuggestionIndex = 0;
+		this.renderSuggestions();
+		this.showSuggestions();
+	}
+
+	renderSuggestions() {
+		if (!this.suggestionsDropdown) return;
+
+		this.suggestionsDropdown.empty();
+
+		this.filteredCommands.forEach((cmd, index) => {
+			const item = this.suggestionsDropdown!.createEl('div', {
+				cls: 'ai-slash-suggestion-item'
+			});
+
+			if (index === this.selectedSuggestionIndex) {
+				item.addClass('selected');
+			}
+
+			const nameEl = item.createEl('span', {
+				cls: 'ai-slash-suggestion-name',
+				text: `/${cmd.name}`
+			});
+
+			const descEl = item.createEl('span', {
+				cls: 'ai-slash-suggestion-desc',
+				text: cmd.description
+			});
+
+			item.addEventListener('click', () => {
+				this.selectedSuggestionIndex = index;
+				this.insertSelectedSuggestion();
+			});
+
+			item.addEventListener('mouseenter', () => {
+				this.selectedSuggestionIndex = index;
+				this.updateSelectedSuggestion();
+			});
+		});
+	}
+
+	showSuggestions() {
+		if (this.suggestionsDropdown) {
+			this.suggestionsDropdown.removeClass('hidden');
+		}
+	}
+
+	hideSuggestions() {
+		if (this.suggestionsDropdown) {
+			this.suggestionsDropdown.addClass('hidden');
+		}
+		this.slashCommandStart = -1;
+		this.filteredCommands = [];
+	}
+
+	navigateSuggestion(direction: number) {
+		if (this.filteredCommands.length === 0) return;
+
+		this.selectedSuggestionIndex += direction;
+
+		// Wrap around
+		if (this.selectedSuggestionIndex < 0) {
+			this.selectedSuggestionIndex = this.filteredCommands.length - 1;
+		} else if (this.selectedSuggestionIndex >= this.filteredCommands.length) {
+			this.selectedSuggestionIndex = 0;
+		}
+
+		this.updateSelectedSuggestion();
+	}
+
+	updateSelectedSuggestion() {
+		if (!this.suggestionsDropdown) return;
+
+		const items = this.suggestionsDropdown.querySelectorAll('.ai-slash-suggestion-item');
+		items.forEach((item, index) => {
+			if (index === this.selectedSuggestionIndex) {
+				item.addClass('selected');
+				// Scroll into view if needed
+				(item as HTMLElement).scrollIntoView({ block: 'nearest' });
+			} else {
+				item.removeClass('selected');
+			}
+		});
+	}
+
+	insertSelectedSuggestion() {
+		if (this.filteredCommands.length === 0 || this.slashCommandStart === -1) return;
+
+		const selectedCommand = this.filteredCommands[this.selectedSuggestionIndex];
+		const text = this.inputField.value;
+		const cursorPos = this.inputField.selectionStart;
+
+		// Replace from slash position to cursor with the full command
+		const before = text.substring(0, this.slashCommandStart);
+		const after = text.substring(cursorPos);
+		const newText = before + '/' + selectedCommand.name + ' ' + after;
+
+		this.inputField.value = newText;
+
+		// Set cursor position after the inserted command
+		const newCursorPos = this.slashCommandStart + selectedCommand.name.length + 2; // +2 for '/' and ' '
+		this.inputField.setSelectionRange(newCursorPos, newCursorPos);
+
+		this.hideSuggestions();
+		this.inputField.focus();
+	}
+
+	// ========== End Slash Command Autocomplete ==========
 
 	addMessage(message: ChatMessage) {
 		this.messages.push(message);

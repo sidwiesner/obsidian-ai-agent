@@ -428,3 +428,58 @@
 	align-self: flex-start;
 	width: 100%;
 }
+
+/* Slash command suggestions dropdown */
+.ai-slash-suggestions {
+	position: absolute;
+	bottom: 100%;
+	left: 0;
+	right: 0;
+	max-height: 200px;
+	overflow-y: auto;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius);
+	box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+	margin-bottom: 4px;
+	z-index: 100;
+}
+
+.ai-slash-suggestions.hidden {
+	display: none;
+}
+
+.ai-slash-suggestion-item {
+	display: flex;
+	flex-direction: column;
+	padding: 8px 12px;
+	cursor: pointer;
+	border-bottom: 1px solid var(--background-modifier-border);
+	transition: background 0.1s ease;
+}
+
+.ai-slash-suggestion-item:last-child {
+	border-bottom: none;
+}
+
+.ai-slash-suggestion-item:hover,
+.ai-slash-suggestion-item.selected {
+	background: var(--background-modifier-hover);
+}
+
+.ai-slash-suggestion-name {
+	font-weight: 500;
+	font-size: var(--font-small);
+	color: var(--text-normal);
+}
+
+.ai-slash-suggestion-desc {
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+	margin-top: 2px;
+}
+
+/* Make input container position relative for dropdown positioning */
+.ai-chat-input-container {
+	position: relative;
+}
