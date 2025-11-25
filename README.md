@@ -1,4 +1,4 @@
-# Obsidian AI Agent
+# Claude Sidebar
 
 Embed Claude Code directly into Obsidian. This plugin runs the Claude Code CLI in a full terminal emulator inside your sidebar, giving you AI-powered file editing, bash commands, and agentic workflows without leaving your vault.
 
