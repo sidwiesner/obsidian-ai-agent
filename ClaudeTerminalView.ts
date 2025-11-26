@@ -163,6 +163,7 @@ export class ClaudeTerminalView extends ItemView {
 			fontFamily: this.settings.terminalFontFamily || 'Menlo, Monaco, "Courier New", monospace',
 			theme: this.getTerminalTheme(),
 			allowProposedApi: true,
+			scrollOnOutput: true,
 		});
 
 		this.fitAddon = new FitAddon();
